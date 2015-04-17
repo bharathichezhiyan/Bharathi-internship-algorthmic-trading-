@@ -24,7 +24,7 @@ for line in input_file: # reading line by line
     record_indicator=line[0:2] #first two values in line is assingned to record_indicator
     segment=line[2:6]
     order_number=line[6:22]
-    order_date=line[12:14]+"/"+line[10:12]+"/"+line[6:10]
+
     #transcation_time=line[22:36]
      
     transcation_time_f=int(line[22:36])/65536.0+time_adjust
@@ -45,7 +45,7 @@ for line in input_file: # reading line by line
     algo_indicator=line[85]
     client_identity_flag=line[86]
     #creating a string of variable seperated by comma","
-    stringi=record_indicator+","+segment+","+order_number+","+order_date+","+transcation_time+ \
+    stringi=record_indicator+","+segment+","+order_number+","+transcation_time+ \
              ","+buy_sell+","+activity_type+","+symbol+","+series+","+volume_disclosed+ \
              ","+volume_original+","+limit_price+","+trigger_price+","+market_order_flag+\
              ","+stop_loss_flag+","+io_flag+","+algo_indicator+","+client_identity_flag
