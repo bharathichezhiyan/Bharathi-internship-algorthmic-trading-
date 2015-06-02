@@ -1,0 +1,75 @@
+
+
+create table cash_order01(Record_Indicator char(2) not null, Segment char(4) not null,Order_number bigint unsigned not null, Transaction_Times bigint unsigned not null, Buy_Sell_Indicator char(1) not null, Activity_Type tinyint(1) not null,Symbol varchar(10) not null, Series char(2) not null, Volume_Disclosed int(8) unsigned not null,Volume_Original int(8) unsigned not null, Limit_Price int(8) unsigned not null, Trigger_Price int(8) unsigned not null, Market_Order_Flag char(1) not null,Stop_Loss_Flag char(1) not null, IO_Flag char(1) not null, Algo_Indicator tinyint(1) not null, primary key(Order_number,Buy_Sell_Indicator,Symbol,Transaction_Times))max_rows=5000000000 engine=myisam;
+
+create table cash_order02(Record_Indicator char(2) not null, Segment char(4) not null,Order_number bigint not null, Transaction_Times bigint not null, Buy_Sell_Indicator char(1) not null, Activity_Type Int(1) not null,Symbol varchar(10) not null, Series char(2) not null, Volume_Disclosed int unsigned not null,Volume_Original int unsigned, Limit_Price int unsigned, Trigger_Price int unsigned, Market_Order_Flag char(1) not null,Stop_Loss_Flag char(1) not null, IO_Flag char(1), Algo_Indicator int(1), primary key(Order_number,Buy_Sell_Indicator,Symbol));
+
+create table cash_order03(Record_Indicator char(2) not null, Segment char(4) not null,Order_number bigint not null, Transaction_Times bigint not null, Buy_Sell_Indicator char(1) not null, Activity_Type Int(1) not null,Symbol varchar(10) not null, Series char(2) not null, Volume_Disclosed int unsigned not null,Volume_Original int unsigned, Limit_Price int unsigned, Trigger_Price int unsigned, Market_Order_Flag char(1) not null,Stop_Loss_Flag char(1) not null, IO_Flag char(1), Algo_Indicator int(1), primary key(Order_number,Buy_Sell_Indicator,Symbol));
+
+load data local infile '/media/sumit/Storage/cash_order_1.csv' into table cash_order_1 fields terminated by ',' lines terminated by '\n';
+
+load data local infile '/media/sumit/Storage/cash_order01.csv' into table cash_order01 fields terminated by ',' lines terminated by '\n';
+
+select count(distinct Symbol) from cash_order01;
+select distinct Symbol from cash_order01;
+select distinct Symbol from cash_order01 into outfile '/tmp/symbol.csv';
+
+select count(Order_number) from cash_order01 where Market_Order_Flag='Y';
+
+select Order_number,count(Order_number),Symbol from cash_order01 group by Symbol into outfile '/tmp/exe1.csv';
+
+select Symbol,count(Order_number)from cash_order01 group by Symbol order by count(Order_number) desc into outfile '/tmp/exe3.csv';
+
+select Symbol,count(Order_number)from cash_order01 where Algo_Indicator=0 group by Symbol order by count(Order_number) desc into outfile '/tmp/exe4.csv';
+select Symbol,count(Order_number)from cash_order01 where (Algo_Indicator=0 and Market_Order_Flag='N') group by Symbol order by count(Order_number) desc into outfile '/tmp/exe15.csv';
+
+load data local infile '/media/sumit/Storage/bhar/cash_trade.csv' into table cash_trade fields terminated by ',' lines terminated by '\n';
+
+
+select symbol,count(trade_number), sum(trade_quantity) from cash_trade group by symbol into outfile '/tmp/tradesum.csv';
+select symbol,count(trade_number), sum(trade_quantity),sum(trade_quantity*trade_price)  from cash_trade group by symbol into outfile '/tmp/tradesum2.csv' fields terminated by ',' lines terminated by '\r\n';
+
+select symbol,count(buy_order_number),count(sell_order_number) from cash_trade group by symbol into outfile '/tmp/buysell.csv' fields terminated by ',' lines terminated by '\n';
+
+alter table cash_example add T_Calc_Time TIME;
+update cash_example set T_Calc_Time=SEC_TO_TIME((((((`Transaction_Times`/65536)/60)/60)/24)*86400)%86400);
+source /home/sumit/Desktop/output/srikant/srikant.sql;
+
+select Distinct date_format(T_Calc_Time,'%H:%i') from cash_trade limit 10;
+
+
+ select Order_number, count(Order_number),T_Calc_Time,TIME_TO_SEC(TIMEDIFF(T_Calc_Time,T_Calc_Time)) from cash_order01 where Symbol='ANKITMETAL' group by Order_number into outfile '/tmp/ordernumber1.csv';
+
+create table ankit select * from cash_order01 where Symbol='ANKITMETAL';
+select a.Order_number,b.Order_number, a.T_Calc_Time,b.T_Calc_Time, timediff(a.T_Calc_Time,b.T_Calc_Time) from ankit as a inner join ankit as b on a.Order_number=b.Order_number; 
+
+select T_Calc_Time from cash_example where (T_Calc_Time> '09:00:00' and T_Calc_Time <'09:05:00')  limit 100;
+
+update cash_example set T_Calc_Time=SEC_TO_TIME((((((`Transaction_Times`/65535.9439)/60)/60)/24)*86400)%86400);
+
+
+select a.Order_number, min(a.T_Calc_Time) as start, Max(a.T_Calc_Time) as end, Timediff(MAX(a.T_Calc_Time),  Min(a.T_Calc_Time)) timedifference from ankit as a group by a.Order_number;
+select a.Order_number, min(a.T_Calc_Time) as start, Max(a.T_Calc_Time) as end, Timediff(MAX(a.T_Calc_Time),  Min(a.T_Calc_Time)) timedifference from cash_example as a group by a.Order_number;
+
+select Transaction_Times from cash_order_1 where mod(Transaction_Times,65535*60)=0;
+
+
+select a.Order_number, min(a.T_Calc_Time) as start, Max(a.T_Calc_Time) as end, Timediff(MAX(a.T_Calc_Time),  Min(a.T_Calc_Time)) timedifference from cash_order01 as a group by a.Order_number into outfile '/tmp/cashorder_timediff.csv' fields terminated by ',' lines terminated by '\r\n';
+select a.Order_number, min(a.Transaction_Times) as start, Max(a.Transaction_Times) as end, (MAX(a.Transaction_Times)-Min(a.Transaction_Times)) timedifference from cash_order01 where Market_Order_Flag='N' as a group by a.Order_number into outfile '/tmp/cashorder_timediff.csv' fields terminated by ',' lines terminated by '\r\n';
+
+select Symbol, count(Order_number) from cash_example where Activity_Type=3 group by Symbol;
+
+create table cboe (trade_dt int, undly char(3), cls char(3), expr_dt int, strk_prc int, pc char(1), oit float(15,4), vol float(15,4), high float(15,4),low float(15,4), open float(15,4), last float(15,4),l_bid float(15,4),l_ask float(15,4), undl_prc float(15,4), s_type varchar(8), p_type varchar(5), primary key(trade_dt,expr_dt,strk_prc));
+
+load data local infile '/home/sumit/Desktop/cboeData2010-11.csv' into table cboe fields terminated by ',' lines terminated by '\n';
+alter table cboe add moneyness float(15,4);
+update cboe set moneyness=strk_prc/undl_prc;
+select *,  count(*) as count from cbeo_ce group by trade_dt,expr_dt into outfile '/tmp/tada1.csv';
+
+
+select * from cash_order_1 where Symbol='bbbbbbSBIN' or Symbol='bbRELIANCE' or Symbol='bbbbbbONGC' or Symbol='bICICIBANK' or Symbol='bbHDFCBANK' or Symbol='bbbbbbbTCS' into outfile '/tmp/cashorder_timediff.csv' fields terminated by ',' lines terminated by '\r\n';
+select * from cash_order_1 where Symbol='bbbbbbSBIN' or Symbol='bbRELIANCE' or Symbol='bbbbbbONGC' or Symbol='bICICIBANK' or Symbol='bbHDFCBANK' or Symbol='bbbbbbbTCS' into outfile '/tmp/Cash_trade_01042013_project.csv' fields terminated by ',' lines terminated by '\r\n';
+
+
+sed -i '1irecord_indicator,segment,order_number,date,transaction_time,buy_sell,activity_type,symbol,series,
+volume_disclosed,volume_original,limit_price,trigger_price,market_order_flag,stop_loss_flag,io_flag,algo_indicator,client_id' tcs.csv
